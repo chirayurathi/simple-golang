@@ -2,11 +2,11 @@
 
 ### A simple Instagram Backend API made on Golang and MongoDB for storage.
 
-## Documentation
+## Documentation :open_book:
 
   Checkout the documentation and examples [Here](https://dark-eclipse-807740.postman.co/workspace/My-Workspace~614a8d29-5482-4044-8533-1cc316804247/documentation/12247743-41311ebe-3e4b-41b5-9cfd-fadf61ee6152) .
 
-## Features
+## Features :sparkles:	
 - ## Users
   - Add User
   - Get User By User ID
@@ -21,7 +21,7 @@
     - page : page number .
     - count: No. of documents each page.
 
-## Sample
+## Sample :pencil2:	
 - ### Add User
   ![Add User Sample](/sample/adduser.JPG)
 - ### Get User By Id
