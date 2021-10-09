@@ -23,10 +23,15 @@
 
 ## Sample
 - ### Add User
+  ![Add User Sample](/sample/adduser.jpg)
 - ### Get User By Id
+  ![Get User Sample](/sample/getuser.jpg)
 - ### Add Post
+  ![Add Post Sample](/sample/addpost.jpg)
 - ### Get Post By ID
+  ![Get Post Sample](/sample/getpost.jpg)
 - ### Get Posts By User ID
+  ![Get Post List Sample](/sample/userpost.jpg)
 
 
 
