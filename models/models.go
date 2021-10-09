@@ -11,6 +11,9 @@ type User struct {
 }
 
 type Post struct {
-	FirstName string `json:"firstname,omitempty" bson:"firstname,omitempty"`
-	LastName  string `json:"lastname,omitempty" bson:"lastname,omitempty"`
+	Id               primitive.ObjectID  `json:"_id,omitempty" bson:"_id,omitempty"`
+	User             primitive.ObjectID  `json:"user,omitempty" bson:"user,omitempty"`
+	Caption          string              `json:"caption,omitempty" bson:"caption,omitempty"`
+	Image_URL        string              `json:"image_url,omitempty" bson:"image_url,omitempty"`
+	Posted_timestamp primitive.Timestamp `bson:"posted_timestamp,omitempty"`
 }

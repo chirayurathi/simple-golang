@@ -1,7 +1,6 @@
 package main
 
 import (
-	"context"
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
@@ -9,44 +8,11 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/chirayurathi/task-app/connection"
+	"github.com/chirayurathi/task-app/helpers"
 	"github.com/chirayurathi/task-app/models"
-	"go.mongodb.org/mongo-driver/mongo"
-	"go.mongodb.org/mongo-driver/mongo/options"
-	"go.mongodb.org/mongo-driver/mongo/readpref"
+	"go.mongodb.org/mongo-driver/bson/primitive"
 )
-
-var dataBase string = "task-app-db"
-
-var client *mongo.Client
-var ctx context.Context
-
-func close(client *mongo.Client, ctx context.Context, cancel context.CancelFunc) {
-
-	defer cancel()
-
-	defer func() {
-		if err := client.Disconnect(ctx); err != nil {
-			panic(err)
-		}
-	}()
-}
-
-func connect(uri string) (*mongo.Client, context.Context, context.CancelFunc, error) {
-
-	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
-
-	client, err := mongo.Connect(ctx, options.Client().ApplyURI(uri))
-	return client, ctx, cancel, err
-}
-
-func ping(client *mongo.Client, ctx context.Context) error {
-
-	if err := client.Ping(ctx, readpref.Primary()); err != nil {
-		return err
-	}
-	fmt.Println("connected successfully")
-	return nil
-}
 
 func WriteResponse(w http.ResponseWriter, status int, res interface{}) {
 	w.Header().Set("Content-Type", "application/json")
@@ -54,38 +20,21 @@ func WriteResponse(w http.ResponseWriter, status int, res interface{}) {
 	json.NewEncoder(w).Encode(res)
 }
 
-func insertOne(doc interface{}) (*mongo.InsertOneResult, error) {
-
-	collection := client.Database(dataBase).Collection("users")
-	result, err := collection.InsertOne(ctx, doc)
-	return result, err
-}
-
-func apiResponse(w http.ResponseWriter, r *http.Request) {
-	// Set the return Content-Type as JSON like before
-	w.Header().Set("Content-Type", "application/json")
-
-	switch r.Method {
-	case "GET":
-		w.WriteHeader(http.StatusOK)
-		w.Write([]byte(`{"message": "GET method requested"}`))
-	case "POST":
-		w.WriteHeader(http.StatusCreated)
-		w.Write([]byte(`{"message": "POST method requested"}`))
-	default:
-		w.WriteHeader(http.StatusNotFound)
-		w.Write([]byte(`{"message": "Can't find method requested"}`))
-	}
-}
-
 func addUser(w http.ResponseWriter, r *http.Request) {
 
 	w.Header().Set("Content-Type", "application/json")
-
 	switch r.Method {
 	case "GET":
-		w.WriteHeader(http.StatusOK)
-		w.Write([]byte(`{"message": "` + r.URL.Path[len("/users/"):] + `"}`))
+		id := r.URL.Path[len("/users/"):]
+		result, err := connection.GetUser(id)
+		fmt.Println(id)
+		if err != nil {
+			WriteResponse(w, http.StatusBadRequest, err.Error())
+			return
+		}
+		result.Password = string(helpers.Decrypt([]byte(result.Password)))
+		WriteResponse(w, http.StatusOK, result)
+
 	case "POST":
 		user := models.User{}
 
@@ -99,11 +48,11 @@ func addUser(w http.ResponseWriter, r *http.Request) {
 			WriteResponse(w, http.StatusBadRequest, err.Error())
 			return
 		}
-		collection := client.Database(dataBase).Collection("user")
-		result, err := collection.InsertOne(context.TODO(), user)
+		user.Password = string(helpers.Encrypt([]byte(user.Password)))
+		result, err := connection.InsertUser(user)
 
 		if err != nil {
-			// helper.GetError(err, w)
+			WriteResponse(w, http.StatusBadRequest, err.Error())
 			return
 		}
 
@@ -111,24 +60,83 @@ func addUser(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+func addPost(w http.ResponseWriter, r *http.Request) {
+
+	w.Header().Set("Content-Type", "application/json")
+	switch r.Method {
+	case "GET":
+		id := r.URL.Path[len("/posts/"):]
+		result, err := connection.GetPost(id)
+		fmt.Println(id)
+		if err != nil {
+			WriteResponse(w, http.StatusBadRequest, err.Error())
+			return
+		}
+
+		WriteResponse(w, http.StatusOK, result)
+
+	case "POST":
+		post := models.Post{}
+
+		body, err := ioutil.ReadAll(r.Body)
+		if err != nil {
+			WriteResponse(w, http.StatusBadRequest, err.Error())
+			return
+		}
+
+		err = json.Unmarshal(body, &post)
+		if err != nil {
+			WriteResponse(w, http.StatusBadRequest, err.Error())
+			return
+		}
+
+		post.Posted_timestamp = primitive.Timestamp{T: uint32(time.Now().Unix())}
+
+		result, err := connection.InsertPost(post)
+
+		if err != nil {
+			WriteResponse(w, http.StatusBadRequest, err.Error())
+			return
+		}
+
+		json.NewEncoder(w).Encode(result)
+	}
+}
+
+func userPostsHandler(w http.ResponseWriter, r *http.Request) {
+
+	w.Header().Set("Content-Type", "application/json")
+	switch r.Method {
+	case "GET":
+		id := r.URL.Path[len("/posts/users/"):]
+		result, err := connection.GetAllPost(id)
+		fmt.Println(id)
+		if err != nil {
+			WriteResponse(w, http.StatusBadRequest, err.Error())
+			return
+		}
+
+		WriteResponse(w, http.StatusOK, result)
+	}
+}
+
 func handleRequests() {
 	http.HandleFunc("/users/", addUser)
+	http.HandleFunc("/posts/", addPost)
+	http.HandleFunc("/posts/users/", userPostsHandler)
 	log.Fatal(http.ListenAndServe(":10000", nil))
 }
 
 func main() {
 
-	var cancel context.CancelFunc
-	var err error
-
-	client, ctx, cancel, err = connect("mongodb://localhost:27017")
-	if err != nil {
-		panic(err)
+	connection.Connect("mongodb://127.0.0.1:27017/")
+	if connection.Err != nil {
+		panic(connection.Err)
 	}
 
-	defer close(client, ctx, cancel)
+	// defer connection.Close(connection.Client, connection.Ctx, connection.Cancel)
 
-	ping(client, ctx)
+	connection.Ping(connection.Client, connection.Ctx)
 
 	handleRequests()
 }
