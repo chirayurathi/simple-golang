@@ -6,6 +6,7 @@ import (
 	"github.com/chirayurathi/task-app/models"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
+	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
 func InsertUser(docs models.User) (models.User, error) {
@@ -73,16 +74,20 @@ func GetPost(id string) (models.Post, error) {
 	return post, nil
 }
 
-func GetAllPost(id string) ([]models.Post, error) {
+func GetAllPost(id string, page int, count int) ([]models.Post, error) {
 	posts := []models.Post{}
-
+	findOptions := options.Find()
+	if page != -1 {
+		findOptions.SetSkip((int64(page) - 1) * int64(count))
+		findOptions.SetLimit(int64(count))
+	}
 	pid, err := primitive.ObjectIDFromHex(id)
 	if err != nil {
 		return posts, err
 	}
 
 	collection := Client.Database(DataBase).Collection("post")
-	cur, err := collection.Find(Ctx, bson.M{"user": pid})
+	cur, err := collection.Find(Ctx, bson.M{"user": pid}, findOptions)
 	if err != nil {
 		return posts, err
 	}

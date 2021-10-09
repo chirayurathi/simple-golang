@@ -2,10 +2,10 @@ package main
 
 import (
 	"encoding/json"
-	"fmt"
 	"io/ioutil"
 	"log"
 	"net/http"
+	"strconv"
 	"time"
 
 	"github.com/chirayurathi/task-app/connection"
@@ -27,7 +27,6 @@ func addUser(w http.ResponseWriter, r *http.Request) {
 	case "GET":
 		id := r.URL.Path[len("/users/"):]
 		result, err := connection.GetUser(id)
-		fmt.Println(id)
 		if err != nil {
 			WriteResponse(w, http.StatusBadRequest, err.Error())
 			return
@@ -67,7 +66,6 @@ func addPost(w http.ResponseWriter, r *http.Request) {
 	case "GET":
 		id := r.URL.Path[len("/posts/"):]
 		result, err := connection.GetPost(id)
-		fmt.Println(id)
 		if err != nil {
 			WriteResponse(w, http.StatusBadRequest, err.Error())
 			return
@@ -106,16 +104,34 @@ func addPost(w http.ResponseWriter, r *http.Request) {
 func userPostsHandler(w http.ResponseWriter, r *http.Request) {
 
 	w.Header().Set("Content-Type", "application/json")
+
 	switch r.Method {
 	case "GET":
+		var page int
+		var count int
+		var err error
 		id := r.URL.Path[len("/posts/users/"):]
-		result, err := connection.GetAllPost(id)
-		fmt.Println(id)
+		query := r.URL.Query()
+		if len(query["page"]) > 0 && len(query["count"]) > 0 {
+			page, err = strconv.Atoi(query["page"][0])
+			if err != nil {
+				WriteResponse(w, http.StatusBadRequest, err.Error())
+				return
+			}
+			count, err = strconv.Atoi(query["count"][0])
+			if err != nil {
+				WriteResponse(w, http.StatusBadRequest, err.Error())
+				return
+			}
+		} else {
+			page = -1
+			count = -1
+		}
+		result, err := connection.GetAllPost(id, page, count)
 		if err != nil {
 			WriteResponse(w, http.StatusBadRequest, err.Error())
 			return
 		}
-
 		WriteResponse(w, http.StatusOK, result)
 	}
 }
