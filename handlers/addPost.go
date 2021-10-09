@@ -26,7 +26,14 @@ func AddPost(w http.ResponseWriter, r *http.Request) {
 		helpers.WriteResponse(w, http.StatusBadRequest, err.Error())
 		return
 	}
-
+	if len(post.Caption) == 0 {
+		helpers.WriteResponse(w, http.StatusBadRequest, `{message:"This Field Is Required"}`)
+		return
+	}
+	if len(post.Image_URL) == 0 {
+		helpers.WriteResponse(w, http.StatusBadRequest, `{message:"This Field Is Required"}`)
+		return
+	}
 	post.Posted_timestamp = primitive.Timestamp{T: uint32(time.Now().Unix())}
 
 	result, err := connection.InsertPost(post)

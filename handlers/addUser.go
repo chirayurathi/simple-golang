@@ -23,6 +23,18 @@ func AddUser(w http.ResponseWriter, r *http.Request) {
 		helpers.WriteResponse(w, http.StatusBadRequest, err.Error())
 		return
 	}
+	if len(user.Name) == 0 {
+		helpers.WriteResponse(w, http.StatusBadRequest, `{message:"This Field Is Required"}`)
+		return
+	}
+	if len(user.Email) == 0 || !helpers.ValidEmail(user.Email) {
+		helpers.WriteResponse(w, http.StatusBadRequest, `{message:"Enter Valid Email"}`)
+		return
+	}
+	if len(user.Password) == 0 {
+		helpers.WriteResponse(w, http.StatusBadRequest, `{message:"This Field Is Required"}`)
+		return
+	}
 	user.Password = string(helpers.Encrypt([]byte(user.Password)))
 	result, err := connection.InsertUser(user)
 
