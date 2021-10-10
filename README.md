@@ -4,7 +4,7 @@
 
 ## Documentation :open_book:
 
-  Checkout the documentation and examples [Here](https://dark-eclipse-807740.postman.co/workspace/My-Workspace~614a8d29-5482-4044-8533-1cc316804247/documentation/12247743-41311ebe-3e4b-41b5-9cfd-fadf61ee6152) .
+  Checkout the documentation and examples [Here](https://documenter.getpostman.com/view/12247743/UV5Rketx) .
 
 ## Features :sparkles:	
 - ## Users
